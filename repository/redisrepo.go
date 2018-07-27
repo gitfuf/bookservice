@@ -12,10 +12,12 @@ import (
 
 const booklist = "books"
 
+//RedisRepo for save redis client connection and use methods to work with redis
 type RedisRepo struct {
 	client *redis.Client
 }
 
+//InitRedisRepo is a func to connect to the redis. If connect was successfull: saved connection into RedisRepo object
 func InitRedisRepo() (*RedisRepo, error) {
 	ret := &RedisRepo{}
 	redisSrv := os.Getenv("REDIS_SERVER")
@@ -38,11 +40,12 @@ func InitRedisRepo() (*RedisRepo, error) {
 	return ret, nil
 }
 
+//CloseRedisRepo as a func to close connection with redis
 func CloseRedisRepo(repo *RedisRepo) {
-	repo.client.Close()
+	log.Println(repo.client.Close())
 }
 
-//Add book to DB using ISBN as key. Also add this ISBN to the booklist
+//AddBook is a RedisRepo method. It is save book into DB using ISBN as key. Also add this ISBN to the booklist
 func (r *RedisRepo) AddBook(book *models.Book) error {
 	key := book.ISBN
 	bs, err := json.Marshal(book)
@@ -50,7 +53,7 @@ func (r *RedisRepo) AddBook(book *models.Book) error {
 		log.Printf("Unable to marshal book entry into bytes: %s\n", err)
 		return err
 	}
-	if err := r.client.Set(key, bs, 0).Err(); err != nil {
+	if err = r.client.Set(key, bs, 0).Err(); err != nil {
 		log.Printf("Unable to store book entry into redis: %s\n", err)
 		return err
 	}
@@ -64,6 +67,7 @@ func (r *RedisRepo) AddBook(book *models.Book) error {
 	return nil
 }
 
+//GetBook is a RedisRepo method. It is get book from DB using ISBN as key
 func (r *RedisRepo) GetBook(isbn string) (*models.Book, error) {
 	ret, err := r.getBookUsingKey(isbn)
 	if err != nil {
@@ -73,7 +77,8 @@ func (r *RedisRepo) GetBook(isbn string) (*models.Book, error) {
 	return ret, nil
 }
 
-//Update book data using ISBN as key
+//UpdateBook is a RedisRepo method.
+//It is update book entry in the DB using isbn as an old key and book object with new data
 func (r *RedisRepo) UpdateBook(isbn string, book *models.Book) error {
 	bs, err := json.Marshal(book)
 	if err != nil {
@@ -81,7 +86,7 @@ func (r *RedisRepo) UpdateBook(isbn string, book *models.Book) error {
 		return err
 	}
 	if isbn == book.ISBN {
-		if err := r.client.SetXX(isbn, bs, 0).Err(); err != nil {
+		if err = r.client.SetXX(isbn, bs, 0).Err(); err != nil {
 			log.Printf("Unable to update book entry (isbn=%s) into redis: %s\n", isbn, err)
 			return err
 		}
@@ -100,7 +105,7 @@ func (r *RedisRepo) UpdateBook(isbn string, book *models.Book) error {
 	}
 
 	//add new one entry
-	if err := r.client.Set(book.ISBN, bs, 0).Err(); err != nil {
+	if err = r.client.Set(book.ISBN, bs, 0).Err(); err != nil {
 		log.Printf("Unable to store book entry into redis: %s\n", err)
 		return err
 	}
@@ -112,7 +117,7 @@ func (r *RedisRepo) UpdateBook(isbn string, book *models.Book) error {
 	return nil
 }
 
-//Delete book from DB using ISBN as key, also delete from booklist
+//DeleteBook is a RedisRepo method. It is delete book from DB using ISBN as key, also delete from booklist
 func (r *RedisRepo) DeleteBook(isbn string) error {
 	err := r.deleteKey(isbn)
 	if err != nil {
@@ -128,6 +133,7 @@ func (r *RedisRepo) DeleteBook(isbn string) error {
 	return nil
 }
 
+//AllBooks is a RedisRepo method. It is return all books from the DB
 func (r *RedisRepo) AllBooks() ([]models.Book, int, error) {
 	var (
 		books []models.Book
@@ -150,6 +156,7 @@ func (r *RedisRepo) AllBooks() ([]models.Book, int, error) {
 	return books, len(books), nil
 }
 
+//Books is a RedisRepo method. It is return range of books from the DB using start and count values
 func (r *RedisRepo) Books(start uint64, count int64) ([]models.Book, int, error) {
 	var books []models.Book
 
@@ -193,7 +200,7 @@ func (r *RedisRepo) deleteKeyFromList(key string, flag int) error {
 	}
 
 	if res == 0 {
-		errors.New("No book in the list with this ISBN")
+		return errors.New("No book in the list with this ISBN")
 	}
 
 	return nil

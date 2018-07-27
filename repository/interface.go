@@ -2,10 +2,12 @@ package repository
 
 import "github.com/gitfuf/bookservice/models"
 
+//DbRepo is an interface for work with database
 type DbRepo interface {
 	BookRepo
 }
 
+//BookRepo interface for work with Book table
 type BookRepo interface {
 	AddBook(book *models.Book) error
 	GetBook(isbn string) (*models.Book, error)

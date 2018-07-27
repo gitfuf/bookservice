@@ -13,10 +13,13 @@ import (
 const dbName = "bookstore"
 const colName = "books"
 
+//MongoRepo struct for store mongodb connection
 type MongoRepo struct {
 	session *mgo.Session
 }
 
+//InitMongoRepo is a func for initialize connection with mongodb.
+//If connection successfull then connection saved into MongoRepo object
 func InitMongoRepo() (*MongoRepo, error) {
 	ret := &MongoRepo{}
 	mgoSrv := os.Getenv("MONGO_SERVER")
@@ -34,7 +37,7 @@ func InitMongoRepo() (*MongoRepo, error) {
 
 	urlcollection := mgoS.DB(dbName).C(colName)
 	if urlcollection == nil {
-		err = errors.New("Collection could not be created, maybe need to create it manually")
+		return nil, errors.New("Collection could not be created, maybe need to create it manually")
 	}
 	// этот код нужен для добавления уникального индекса бд.
 	index := mgo.Index{
@@ -42,15 +45,17 @@ func InitMongoRepo() (*MongoRepo, error) {
 		Unique:   true,
 		DropDups: true,
 	}
-	urlcollection.EnsureIndex(index)
+	err = urlcollection.EnsureIndex(index)
 
 	return ret, err
 }
 
+//CloseMongoRepo is a func for close mongodb connection
 func CloseMongoRepo(mongo *MongoRepo) {
 	mongo.session.Close()
 }
 
+//AddBook is a method of MongoRepo. Add book into DB
 func (mr *MongoRepo) AddBook(book *models.Book) error {
 
 	tempSession := mr.session.Copy()
@@ -68,6 +73,7 @@ func (mr *MongoRepo) AddBook(book *models.Book) error {
 	return err
 }
 
+//GetBook is a method of MongoRepo. Get book from DB using isbn as a key
 func (mr *MongoRepo) GetBook(isbn string) (*models.Book, error) {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
@@ -81,6 +87,7 @@ func (mr *MongoRepo) GetBook(isbn string) (*models.Book, error) {
 	return &ret, nil
 }
 
+//DeleteBook is a method of MongoRepo. Delete book from DB using isbn as a key
 func (mr *MongoRepo) DeleteBook(isbn string) error {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
@@ -89,6 +96,7 @@ func (mr *MongoRepo) DeleteBook(isbn string) error {
 	return err
 }
 
+//UpdateBook is a method of MongoRepo. Update book entry in the DB using isbn as an old key and book object with new data
 func (mr *MongoRepo) UpdateBook(isbn string, book *models.Book) error {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
@@ -104,6 +112,7 @@ func (mr *MongoRepo) UpdateBook(isbn string, book *models.Book) error {
 	return nil
 }
 
+//AllBooks return all books from the DB
 func (mr *MongoRepo) AllBooks() ([]models.Book, int, error) {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
@@ -115,6 +124,7 @@ func (mr *MongoRepo) AllBooks() ([]models.Book, int, error) {
 	return books, len(books), err
 }
 
+//Books return range of books from the DB using start and count values
 func (mr *MongoRepo) Books(start uint64, count int64) ([]models.Book, int, error) {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()

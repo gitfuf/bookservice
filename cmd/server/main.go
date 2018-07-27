@@ -45,8 +45,7 @@ func main() {
 
 	}
 
-	var port string
-	port = os.Getenv("HTTP_PORT")
+	port := os.Getenv("HTTP_PORT")
 	if len(port) == 0 {
 		port = "8080"
 	}
@@ -59,10 +58,11 @@ func main() {
 	router.HandleFunc("/book/{isbn:[0-9]+}", bc.DeleteBook).Methods("DELETE")
 	router.HandleFunc("/book/{isbn:[0-9]+}", bc.UpdateBook).Methods("PUT")
 
-	http.ListenAndServe(":"+port, router)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 
 }
 
+//ConnectToMongoDB func returns pointer to MongoRepo struct
 func ConnectToMongoDB() (*repository.MongoRepo, error) {
 	//init mongo session
 	mgo, err := repository.InitMongoRepo()
@@ -74,6 +74,7 @@ func ConnectToMongoDB() (*repository.MongoRepo, error) {
 
 }
 
+//ConnectToRedis unc returns pointer to RedisRepo struct
 func ConnectToRedis() (*repository.RedisRepo, error) {
 	rds, err := repository.InitRedisRepo()
 	if err != nil {
