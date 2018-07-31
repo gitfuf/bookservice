@@ -153,6 +153,12 @@ func (r *RedisRepo) AllBooks() ([]models.Book, int, error) {
 		books = append(books, *book)
 	}
 	log.Printf("Found %d books", len(books))
+	for _, bk := range books {
+		for _, author := range bk.Authors {
+			log.Println("author: ", author)
+		}
+
+	}
 	return books, len(books), nil
 }
 
