@@ -10,17 +10,20 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+/*
 const dbName = "bookstore"
 const colName = "books"
-
+*/
 //MongoRepo struct for store mongodb connection
 type MongoRepo struct {
 	session *mgo.Session
+	dbName  string
+	colName string
 }
 
 //InitMongoRepo is a func for initialize connection with mongodb.
 //If connection successfull then connection saved into MongoRepo object
-func InitMongoRepo() (*MongoRepo, error) {
+func InitMongoRepo(db, col string) (*MongoRepo, error) {
 	ret := &MongoRepo{}
 	mgoSrv := os.Getenv("MONGO_SERVER")
 	if len(mgoSrv) == 0 {
@@ -34,8 +37,10 @@ func InitMongoRepo() (*MongoRepo, error) {
 
 	log.Println("Connection established to mongo server:", mgoSrv)
 	ret.session = mgoS
+	ret.dbName = db
+	ret.colName = col
 
-	urlcollection := mgoS.DB(dbName).C(colName)
+	urlcollection := mgoS.DB(db).C(col)
 	if urlcollection == nil {
 		return nil, errors.New("Collection could not be created, maybe need to create it manually")
 	}
@@ -61,7 +66,7 @@ func (mr *MongoRepo) AddBook(book *models.Book) error {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
 
-	collection := tempSession.DB(dbName).C(colName)
+	collection := tempSession.DB(mr.dbName).C(mr.colName)
 	err := collection.Insert(book)
 	if err != nil {
 		log.Println("mongorepo:AddBook err =", err)
@@ -79,8 +84,11 @@ func (mr *MongoRepo) GetBook(isbn string) (*models.Book, error) {
 	defer tempSession.Close()
 
 	ret := models.Book{}
-	err := tempSession.DB(dbName).C(colName).Find(bson.M{"isbn": isbn}).One(&ret)
+	err := tempSession.DB(mr.dbName).C(mr.colName).Find(bson.M{"isbn": isbn}).One(&ret)
 	if err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, errors.New("No book with this ISBN")
+		}
 		return nil, err
 	}
 
@@ -92,7 +100,10 @@ func (mr *MongoRepo) DeleteBook(isbn string) error {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
 
-	err := tempSession.DB(dbName).C(colName).Remove(bson.M{"isbn": isbn})
+	err := tempSession.DB(mr.dbName).C(mr.colName).Remove(bson.M{"isbn": isbn})
+	if err == mgo.ErrNotFound {
+		return errors.New("No book with this ISBN")
+	}
 	return err
 }
 
@@ -100,13 +111,13 @@ func (mr *MongoRepo) DeleteBook(isbn string) error {
 func (mr *MongoRepo) UpdateBook(isbn string, book *models.Book) error {
 	tempSession := mr.session.Copy()
 	defer tempSession.Close()
-	err := tempSession.DB(dbName).C(colName).Update(bson.M{"isbn": isbn}, &book)
+	err := tempSession.DB(mr.dbName).C(mr.colName).Update(bson.M{"isbn": isbn}, &book)
 	if err != nil {
 		switch err {
 		default:
 			return err
 		case mgo.ErrNotFound:
-			return errors.New("Not found")
+			return errors.New("No book with this ISBN")
 		}
 	}
 	return nil
@@ -118,7 +129,7 @@ func (mr *MongoRepo) AllBooks() ([]models.Book, int, error) {
 	defer tempSession.Close()
 
 	var books []models.Book
-	coll := tempSession.DB(dbName).C(colName)
+	coll := tempSession.DB(mr.dbName).C(mr.colName)
 
 	err := coll.Find(bson.M{}).All(&books)
 	return books, len(books), err
@@ -130,8 +141,16 @@ func (mr *MongoRepo) Books(start uint64, count int64) ([]models.Book, int, error
 	defer tempSession.Close()
 
 	var books []models.Book
-	coll := tempSession.DB(dbName).C(colName)
+	coll := tempSession.DB(mr.dbName).C(mr.colName)
 
 	err := coll.Find(bson.M{}).Skip(int(start)).Limit(int(count)).All(&books)
 	return books, len(books), err
+}
+
+func (mr *MongoRepo) ClearAll() error {
+	tempSession := mr.session.Copy()
+	defer tempSession.Close()
+
+	_, err := tempSession.DB(mr.dbName).C(mr.colName).RemoveAll(bson.M{})
+	return err
 }

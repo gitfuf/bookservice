@@ -15,4 +15,5 @@ type BookRepo interface {
 	DeleteBook(isbn string) error
 	AllBooks() ([]models.Book, int, error)
 	Books(start uint64, count int64) ([]models.Book, int, error)
+	ClearAll() error
 }

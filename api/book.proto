@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+//protoc --go_out=plugins=grpc:. *.proto
+
+package api;
+
+message Book {
+	string isbn = 1;
+	string name = 2;
+	repeated string authors= 3;
+	string price = 4;
+}
+
+message UpdateBookRequest {
+	string isbn = 1;
+	Book book = 2;
+}
+
+message BooksResponse {
+	int32 amount = 1;
+	repeated Book books = 2;
+}
+
+message Range {
+	int32 start = 1;
+	int32 count = 2;
+	
+}
+
+message ISBN {
+	string isbn = 1;
+}
+
+message SimpleResponse {
+	bool ok = 1;
+	string err = 2;
+}
+
+message Empty{}
+
+
+service BookController {
+	rpc AddBook (Book) returns (SimpleResponse) {}
+	rpc GetBook (ISBN) returns (Book) {}
+	rpc DeleteBook (ISBN) returns (SimpleResponse) {}
+	rpc UpdateBook (UpdateBookRequest) returns (SimpleResponse) {}
+	rpc Books (Range) returns (BooksResponse) {}
+	rpc AllBooks(Empty) returns (BooksResponse) {}
+	
+}

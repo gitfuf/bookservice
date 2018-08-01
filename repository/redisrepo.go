@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
@@ -18,7 +19,7 @@ type RedisRepo struct {
 }
 
 //InitRedisRepo is a func to connect to the redis. If connect was successfull: saved connection into RedisRepo object
-func InitRedisRepo() (*RedisRepo, error) {
+func InitRedisRepo(dbNum int) (*RedisRepo, error) {
 	ret := &RedisRepo{}
 	redisSrv := os.Getenv("REDIS_SERVER")
 	if len(redisSrv) == 0 {
@@ -28,7 +29,7 @@ func InitRedisRepo() (*RedisRepo, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     redisSrv + ":6379",
 		Password: "", // no password set
-		DB:       0,  // use default DB
+		DB:       dbNum,
 	})
 
 	_, err := client.Ping().Result()
@@ -71,6 +72,9 @@ func (r *RedisRepo) AddBook(book *models.Book) error {
 func (r *RedisRepo) GetBook(isbn string) (*models.Book, error) {
 	ret, err := r.getBookUsingKey(isbn)
 	if err != nil {
+		if err == redis.Nil {
+			return nil, errors.New("No book with this ISBN")
+		}
 		return nil, err
 	}
 	log.Printf("GetBook %v is successful \n", ret)
@@ -153,12 +157,12 @@ func (r *RedisRepo) AllBooks() ([]models.Book, int, error) {
 		books = append(books, *book)
 	}
 	log.Printf("Found %d books", len(books))
-	for _, bk := range books {
+	/*for _, bk := range books {
 		for _, author := range bk.Authors {
 			log.Println("author: ", author)
 		}
 
-	}
+	}*/
 	return books, len(books), nil
 }
 
@@ -166,6 +170,10 @@ func (r *RedisRepo) AllBooks() ([]models.Book, int, error) {
 func (r *RedisRepo) Books(start uint64, count int64) ([]models.Book, int, error) {
 	var books []models.Book
 
+	//if use "lrange 0 1" returned 2 rows so use "lrange 0 0" for 1
+	if start == 0 {
+		count--
+	}
 	keys, err := r.client.LRange(booklist, int64(start), count).Result()
 	if err != nil {
 		log.Println("Can't get booklist from db:", err)
@@ -188,7 +196,7 @@ func (r *RedisRepo) getBookUsingKey(key string) (*models.Book, error) {
 	ret := models.Book{}
 	data, err := r.client.Get(key).Bytes()
 	if err != nil {
-		//log.Printf("Unable to retrieve book entry from redis: %s \n", err)
+		fmt.Printf("Unable to retrieve book entry from redis: %s \n", err)
 		return nil, err
 	}
 	if err := json.Unmarshal(data, &ret); err != nil {
@@ -221,5 +229,10 @@ func (r *RedisRepo) deleteKey(key string) error {
 	if res == 0 {
 		return errors.New("No book with this ISBN")
 	}
+	return nil
+}
+
+func (r *RedisRepo) ClearAll() error {
+	r.client.FlushDB()
 	return nil
 }

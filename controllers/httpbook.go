@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	//"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,8 +11,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//BookController struct
-type BookController struct {
+//HttpBookController struct
+type HttpBookController struct {
 	db repository.DbRepo
 }
 
@@ -22,13 +21,13 @@ type booksResponse struct {
 	Books  []models.Book
 }
 
-//NewBookController is a func which is return new BookController with selected database handler
-func NewBookController(repo repository.DbRepo) *BookController {
-	return &BookController{db: repo}
+//NewHttpBookController is a func which is return new HttpBookController with selected database handler
+func NewHttpBookController(repo repository.DbRepo) *HttpBookController {
+	return &HttpBookController{db: repo}
 }
 
-//AddBook method of BookController processes POST "/book" route
-func (bc *BookController) AddBook(w http.ResponseWriter, r *http.Request) {
+//AddBook method of HttpBookController processes POST "/book" route
+func (bc *HttpBookController) AddBook(w http.ResponseWriter, r *http.Request) {
 	book := models.Book{}
 	err := json.NewDecoder(r.Body).Decode(&book)
 	if err != nil {
@@ -44,8 +43,8 @@ func (bc *BookController) AddBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, book)
 }
 
-//GetBook method of BookController processes GET "/book" route
-func (bc *BookController) GetBook(w http.ResponseWriter, r *http.Request) {
+//GetBook method of HttpBookController processes GET "/book" route
+func (bc *HttpBookController) GetBook(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	isbn := vars["isbn"]
 
@@ -59,8 +58,8 @@ func (bc *BookController) GetBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, book)
 }
 
-//DeleteBook method of BookController processes DELETE "/book/{isbn:[0-9]+}" route
-func (bc *BookController) DeleteBook(w http.ResponseWriter, r *http.Request) {
+//DeleteBook method of HttpBookController processes DELETE "/book/{isbn:[0-9]+}" route
+func (bc *HttpBookController) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	isbn := vars["isbn"]
 
@@ -73,8 +72,8 @@ func (bc *BookController) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
-//UpdateBook method of BookController processes PUT "/book/{isbn:[0-9]+}" route
-func (bc *BookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
+//UpdateBook method of HttpBookController processes PUT "/book/{isbn:[0-9]+}" route
+func (bc *HttpBookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	book := models.Book{}
 	vars := mux.Vars(r)
 	isbn := vars["isbn"]
@@ -98,8 +97,8 @@ func (bc *BookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
-//AllBooks method of BookController processes  GET "/books" route
-func (bc *BookController) AllBooks(w http.ResponseWriter, r *http.Request) {
+//AllBooks method of HttpBookController processes  GET "/books" route
+func (bc *HttpBookController) AllBooks(w http.ResponseWriter, r *http.Request) {
 	log.Println("AllBooks begin")
 	books, amount, err := bc.db.AllBooks()
 
@@ -118,8 +117,8 @@ func (bc *BookController) AllBooks(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, resp)
 }
 
-//Books method of BookController processes GET "/books/{start:[0-9]+}/{count:[0-9]+}" route
-func (bc *BookController) Books(w http.ResponseWriter, r *http.Request) {
+//Books method of HttpBookController processes GET "/books/{start:[0-9]+}/{count:[0-9]+}" route
+func (bc *HttpBookController) Books(w http.ResponseWriter, r *http.Request) {
 	log.Println("Get books")
 	vars := mux.Vars(r)
 	countS := vars["count"]
