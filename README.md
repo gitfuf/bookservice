@@ -1,13 +1,21 @@
 # bookservice
-Test REST API server for book managment. 
-Was written in order to practice work with RESP API and NoSQL databases like Mongodb and Redis.
-In order to run server for redis:
+Test REST API / gRPC server for book managment. 
+Was written in order to practice work with RESP API / gRPC and NoSQL databases like Mongodb and Redis.
 
-`go run ./cmd/server/main.go -db=redis`
+Service has two flags:
 
-for mongodb can use simple 
+```
+flag.String("db", "redis", "declare what type of repository use: mongodb, redis")
+flag.String("bc", "grpc", "declare what type of book controller to use: http, grpc")
+```
 
-`go run ./cmd/server/main.go` or `go run ./cmd/server/main.go -db=mongodb`
+In order to run server for mongodb as HTTP server:
+
+`go run ./cmd/server/main.go -db=mongodb -bc=http`
+
+In order to run server for mongodb as gRPC server:
+
+`go run ./cmd/server/main.go -db=mongodb -bc=grpc`
 
 ### REST API routes:
 
